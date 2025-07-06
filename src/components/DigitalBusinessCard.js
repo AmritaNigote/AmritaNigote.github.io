@@ -79,7 +79,7 @@ export default function DigitalBusinessCard() {
                   // Compose contact details
                   const contact = {
                     name: ["Amrita Nigote"],
-                    email: ["amritanigote@example.com"],
+                    email: ["amritanigote39@gmail.com"],
                     tel: ["+91 9686023035"],
                     icon: [window.location.origin + "/profile.jpg"]
                   };
@@ -108,10 +108,10 @@ export default function DigitalBusinessCard() {
       <div className="w-full mt-10 px-4">
         <div className="max-w-[20rem] mx-auto">
           <SocialCardButton
-            href="mailto:amritanigote@example.com"
+            href="mailto:amritanigote39@gmail.com"
             icon={<FaEnvelope />}
             title="Email"
-            description="amritanigote@example.com"
+            description="amritanigote39@gmail.com"
             colorClass="btn-email dark:btn-email"
           />
           <SocialCardButton
