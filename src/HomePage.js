@@ -32,15 +32,59 @@ function MobileMenu({ open, setOpen }) {
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showMsg, setShowMsg] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: '',
+  });
+  const [submitted, setSubmitted] = useState(false);
+  // Upcoming Events state
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
 
-  // Smooth scroll for nav links
-        const [formData, setFormData] = useState({
-          name: '',
-          email: '',
-          phone: '',
-          message: '',
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch('https://docs.google.com/spreadsheets/d/16fng5xGOB9G7bgkonM4_VkHWHseH7X8gdMsv8Hn4TEQ/gviz/tq?tqx=out:csv');
+        const text = await res.text();
+        const lines = text.split('\n').filter(Boolean);
+        if (lines.length < 2) return setLoadingEvents(false);
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        const rows = lines.slice(1).map(line => {
+          const cols = line.match(/("[^"]*"|[^,]+)/g)?.map(c => c.replace(/"/g, '').trim()) || [];
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = cols[i] || '');
+          return obj;
         });
-        const [submitted, setSubmitted] = useState(false);
+        // Filter future events using user's local time
+        const now = new Date();
+        // Show all future events, including cancelled
+        const futureEvents = rows.filter(ev => {
+          const dateStr = ev['Date'];
+          const timeStr = ev['Time'];
+          if (!dateStr) return false;
+          // Assume CSV date/time is in user's local time
+          let eventDate;
+          if (timeStr) {
+            eventDate = new Date(`${dateStr}T${timeStr}`);
+            if (isNaN(eventDate.getTime())) {
+              eventDate = new Date(`${dateStr} ${timeStr}`);
+            }
+          } else {
+            eventDate = new Date(dateStr);
+          }
+          if (isNaN(eventDate.getTime())) return false;
+          return eventDate > now;
+        });
+        setEvents(futureEvents);
+      } catch {
+        setEvents([]);
+      }
+      setLoadingEvents(false);
+    }
+    fetchEvents();
+  }, []);
 
         const handleChange = (e) => {
           setFormData({
@@ -132,6 +176,68 @@ export default function HomePage() {
           >
             Begin Your Journey
           </button>
+        </div>
+      </section>
+
+      {/* Upcoming Events Section */}
+      <section id="events" className="py-20 bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-extrabold text-purple-800 mb-2 tracking-tight">Upcoming Events</h2>
+            <div className="w-20 h-1 bg-purple-400 mx-auto rounded-full"></div>
+          </div>
+          {loadingEvents ? (
+            <div className="text-center text-gray-500 animate-pulse">Loading events...</div>
+          ) : events.length === 0 ? (
+            <div className="text-center text-gray-500">No upcoming events.</div>
+          ) : (
+            <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+              {events.map((ev, idx) => {
+                // Color for status
+                let statusColor = "bg-green-100 text-green-700";
+                if (ev['Status']?.toLowerCase() === 'cancelled') statusColor = "bg-red-100 text-red-700";
+                else if (ev['Status']?.toLowerCase() === 'tentative') statusColor = "bg-yellow-100 text-yellow-700";
+                // Type badge color
+                let typeColor = "bg-blue-100 text-blue-700";
+                if (ev['Type']?.toLowerCase() === 'virtual') typeColor = "bg-teal-100 text-teal-700";
+                else if (ev['Type']?.toLowerCase() === 'in person') typeColor = "bg-purple-100 text-purple-700";
+                return (
+                  <div
+                    key={idx}
+                    className="relative p-8 rounded-2xl shadow-xl border border-gray-200 bg-white hover:scale-105 transition-transform duration-300 group flex flex-col justify-between min-h-[370px]"
+                  >
+                    <div className="absolute -top-6 left-6 flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusColor}`}>{ev['Status'] || 'Active'}</span>
+                      {ev['Type'] && <span className={`px-3 py-1 rounded-full text-xs font-bold ml-2 ${typeColor}`}>{ev['Type']}</span>}
+                    </div>
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="bg-purple-100 rounded-full p-3 shadow">
+                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-purple-700">{ev['Date']}</div>
+                        {ev['Time'] && <div className="text-sm text-gray-500">{ev['Time']}</div>}
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2 text-gray-900 group-hover:text-purple-700 transition-colors">{ev['Event Title']}</h3>
+                    <div className="mb-2 text-gray-700 text-base font-medium">{ev['Description']}</div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 12.414a4 4 0 10-5.657 5.657l4.243 4.243a8 8 0 1011.314-11.314l-4.243 4.243z" /></svg>
+                      {ev['Location Address'] && ev['Location Link'] ? (
+                        <a href={ev['Location Link']} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-700 underline hover:text-blue-900">{ev['Location Address']}</a>
+                      ) : (
+                        <span className="text-sm text-gray-600">{ev['Location Address'] || ev['Location']}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3" /></svg>
+                      <span className="text-sm text-gray-600">Duration: {ev['Duration(min)']} min</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
