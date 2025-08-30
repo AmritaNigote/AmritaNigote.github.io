@@ -195,44 +195,65 @@ export default function HomePage() {
               {events.map((ev, idx) => {
                 // Color for status
                 let statusColor = "bg-green-100 text-green-700";
-                if (ev['Status']?.toLowerCase() === 'cancelled') statusColor = "bg-red-100 text-red-700";
-                else if (ev['Status']?.toLowerCase() === 'tentative') statusColor = "bg-yellow-100 text-yellow-700";
+                const status = (ev['Status'] || '').toLowerCase();
+                if (status === 'cancelled') statusColor = "bg-red-100 text-red-700";
+                else if (status === 'tentative') statusColor = "bg-yellow-100 text-yellow-700";
+                else if (status === 'open for registration') statusColor = "bg-blue-100 text-blue-700";
+                else if (status === 'filling fast') statusColor = "bg-yellow-100 text-yellow-700 border border-yellow-400";
+                else if (status === 'last few left') statusColor = "bg-orange-100 text-orange-700 border border-orange-400";
+                else if (status === 'full') statusColor = "bg-gray-200 text-gray-700 border border-gray-400";
                 // Type badge color
                 let typeColor = "bg-blue-100 text-blue-700";
                 if (ev['Type']?.toLowerCase() === 'virtual') typeColor = "bg-teal-100 text-teal-700";
                 else if (ev['Type']?.toLowerCase() === 'in person') typeColor = "bg-purple-100 text-purple-700";
                 return (
-                  <div
-                    key={idx}
-                    className="relative p-8 rounded-2xl shadow-xl border border-gray-200 bg-white hover:scale-105 transition-transform duration-300 group flex flex-col justify-between min-h-[370px]"
-                  >
-                    <div className="absolute -top-6 left-6 flex items-center gap-2">
+                  <div key={idx} className="relative p-8 rounded-2xl shadow-2xl border border-gray-100 bg-gradient-to-br from-white to-purple-50 hover:scale-105 transition-transform duration-300 group flex flex-col justify-between min-h-[420px]">
+                    <div className="flex flex-wrap gap-2 mb-4 items-center">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusColor}`}>{ev['Status'] || 'Active'}</span>
-                      {ev['Type'] && <span className={`px-3 py-1 rounded-full text-xs font-bold ml-2 ${typeColor}`}>{ev['Type']}</span>}
+                      {ev['Type'] && <span className={`px-3 py-1 rounded-full text-xs font-bold ${typeColor}`}>{ev['Type']}</span>}
+                      {typeof ev['Price'] !== 'undefined' && (
+                        parseFloat(ev['Price']) === 0 ? (
+                          <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor">₹</text></svg>
+                            Free
+                          </span>
+                        ) : (
+                          <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor">₹</text></svg>
+                            ₹{ev['Price']}
+                          </span>
+                        )
+                      )}
                     </div>
-                    <div className="mb-4 flex items-center gap-3">
-                      <div className="bg-purple-100 rounded-full p-3 shadow">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="bg-purple-100 rounded-full p-2 shadow">
                         <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       </div>
                       <div>
                         <div className="text-lg font-bold text-purple-700">{ev['Date']}</div>
-                        {ev['Time'] && <div className="text-sm text-gray-500">{ev['Time']}</div>}
+                        {ev['Time'] && <div className="text-sm text-gray-500 font-semibold">{ev['Time']}</div>}
                       </div>
                     </div>
-                    <h3 className="text-2xl font-bold mb-2 text-gray-900 group-hover:text-purple-700 transition-colors">{ev['Event Title']}</h3>
-                    <div className="mb-2 text-gray-700 text-base font-medium">{ev['Description']}</div>
+                    <h3 className="text-xl font-bold mb-2 text-gray-900 group-hover:text-purple-700 transition-colors leading-tight">{ev['Event Title']}</h3>
+                    <div className="mb-3 text-gray-600 text-base font-normal italic">{ev['Description']}</div>
                     <div className="flex items-center gap-2 mb-2">
                       <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 12.414a4 4 0 10-5.657 5.657l4.243 4.243a8 8 0 1011.314-11.314l-4.243 4.243z" /></svg>
                       {ev['Location Address'] && ev['Location Link'] ? (
-                        <a href={ev['Location Link']} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-700 underline hover:text-blue-900">{ev['Location Address']}</a>
+                        <a href={ev['Location Link']} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-700 underline hover:text-blue-900 font-medium">{ev['Location Address']}</a>
                       ) : (
-                        <span className="text-sm text-gray-600">{ev['Location Address'] || ev['Location']}</span>
+                        <span className="text-sm text-gray-700 font-medium">{ev['Location Address'] || ev['Location']}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 mb-2">
                       <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3" /></svg>
-                      <span className="text-sm text-gray-600">Duration: {ev['Duration(min)']} min</span>
+                      <span className="text-sm text-gray-700 font-medium">Duration: {ev['Duration(min)']} min</span>
                     </div>
+                    {ev['Seats'] && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        <span className="text-sm text-gray-800 font-medium">Seats: {ev['Seats']}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
