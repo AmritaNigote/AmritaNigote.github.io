@@ -13,7 +13,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     async function fetchEvent() {
-      const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRvU60bZTBesKWLfuWl86PJRT9PhTwn7vjhoJbBEKhT1-k-Y9MynV1AOVme7xGr96HKxoGpIGqlQKMe/pub?gid=0&single=true&output=csv");
+      const res = await fetch(`https://docs.google.com/spreadsheets/d/e/2PACX-1vRvU60bZTBesKWLfuWl86PJRT9PhTwn7vjhoJbBEKhT1-k-Y9MynV1AOVme7xGr96HKxoGpIGqlQKMe/pub?gid=0&single=true&output=csv&nocache=${Date.now()}`, { cache: "no-store" });
       const text = await res.text();
       const lines = text.split("\n").filter(Boolean);
       if (lines.length < 2) return setLoading(false);
@@ -55,8 +55,20 @@ export default function RegisterPage() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    // TODO: Wire up Google Form submission
-    setSubmitted(true);
+    // Submit to Google Forms
+    const formDataObj = new FormData();
+    formDataObj.append('entry.1637059076', formData.name);
+    formDataObj.append('entry.1901972138', formData.email);
+    formDataObj.append('entry.1940814904', formData.phone);
+    formDataObj.append('entry.919348231', eventId);
+
+    fetch('https://docs.google.com/forms/d/e/1FAIpQLSfQq_Y9jliZ1a6ioJ8gelPCZKQZhtw4-Q-JBu2lp_4lzwQYew/formResponse', {
+      method: 'POST',
+      mode: 'no-cors',
+      body: formDataObj,
+    }).then(() => {
+      setSubmitted(true);
+    });
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-xl animate-pulse">Loading...</div>;
@@ -65,20 +77,14 @@ export default function RegisterPage() {
   const availableSlots = parseInt(event["Slots"] || "0", 10) - parseInt(event["Registered"] || "0", 10);
 
   return (
+    <div className="bg-gray-50 font-inter">
     <div className="min-h-screen bg-gradient-to-br from-white to-purple-50 px-0 pb-12 flex flex-col items-center">
       {/* Yoga Cover Image */}
       <div className="w-full h-64 md:h-80 bg-purple-200 flex items-center justify-center relative mb-8">
-    <img src={registrationCover} alt="Yoga Registration Cover" className="object-cover w-full h-full opacity-80" />
+        <img src={registrationCover} alt="Yoga Registration Cover" className="object-cover w-full h-full opacity-80" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
           <h1 className="text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg mb-2">{event["Event Title"]}</h1>
           <p className="text-lg md:text-xl text-purple-100 font-medium drop-shadow mb-2">{event["Description"]}</p>
-          {event["Type"] === "Virtual" && (
-            <p className="text-base md:text-lg text-blue-100 font-semibold drop-shadow mt-2">
-              {parseFloat(event["Price"] || "0") > 0
-                ? "Event link will be shared after payment."
-                : "Event link will be shared separately."}
-            </p>
-          )}
         </div>
       </div>
       <div className="w-full max-w-3xl mx-auto px-4">
@@ -87,7 +93,7 @@ export default function RegisterPage() {
           <div className="bg-white bg-opacity-80 rounded-xl p-6 shadow flex flex-col gap-2">
             {event["Level"] && (
               <div className="flex items-center gap-2 text-base font-semibold text-purple-600 mb-1">
-                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><text x="12" y="16" textAnchor="middle" fontSize="10" fill="currentColor">Lv</text></svg>
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" /><text x="12" y="16" textAnchor="middle" fontSize="10" fill="currentColor">Lv</text></svg>
                 <span>Level: {event["Level"]}</span>
               </div>
             )}
@@ -109,7 +115,7 @@ export default function RegisterPage() {
             <div className="flex items-center gap-2 text-base text-gray-700 font-medium">
               {event["Type"] === "Virtual" ? (
                 <>
-                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M8 19h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M8 19h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                   <span>{event["Location Address"] || event["Location"]}</span>
                   <span className="block text-xs text-blue-600 mt-1">
                     {parseFloat(event["Price"] || "0") > 0
@@ -119,7 +125,7 @@ export default function RegisterPage() {
                 </>
               ) : (
                 <>
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0-4.314-6-10-6-10z" /><circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="2" fill="none"/></svg>
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0-4.314-6-10-6-10z" /><circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>
                   <span>{event["Location Address"] || event["Location"]}</span>
                   {event["Location Link"] && (
                     <a
@@ -128,7 +134,7 @@ export default function RegisterPage() {
                       rel="noopener noreferrer"
                       className="ml-2 inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold hover:bg-green-200 transition-colors"
                     >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0-4.314-6-10-6-10z" /><circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="2" fill="none"/></svg>
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0-4.314-6-10-6-10z" /><circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>
                       Navigate
                     </a>
                   )}
@@ -138,11 +144,11 @@ export default function RegisterPage() {
           </div>
           <div className="bg-white bg-opacity-80 rounded-xl p-6 shadow flex flex-col gap-2 justify-center">
             <div className="flex items-center gap-2 text-lg font-bold text-yellow-700">
-              <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor">₹</text></svg>
+              <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" /><text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor">₹</text></svg>
               <span>{parseFloat(event["Price"] || "0") === 0 ? "Free" : `₹${event["Price"]}`}</span>
             </div>
             <div className="flex items-center gap-2 text-base text-indigo-700 font-semibold">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14" /></svg>
+              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
               <span>Available Slots: {availableSlots}</span>
             </div>
             {parseFloat(event["Price"] || "0") > 0 && (
@@ -152,21 +158,23 @@ export default function RegisterPage() {
             )}
           </div>
         </div>
-        {slotsAvailable ? (
-          <form className="w-full max-w-2xl mx-auto space-y-6" onSubmit={handleSubmit}>
-            <input type="hidden" name="eventId" value={eventId} />
-            <div className="flex flex-col gap-4">
-              <input type="text" name="name" placeholder="Your Name" value={formData.name} onChange={handleChange} required className="px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200" />
-              <input type="tel" name="phone" placeholder="Your Phone" value={formData.phone} onChange={handleChange} required className="px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200" />
-              <input type="email" name="email" placeholder="Your Email" value={formData.email} onChange={handleChange} required className="px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200" />
-            </div>
-            <button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-purple-700 text-white py-3 rounded-lg font-bold text-lg hover:scale-105 transition-transform duration-200 flex items-center justify-center gap-2">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
-              Register
-            </button>
-          </form>
-        ) : (
-          <div className="w-full max-w-2xl mx-auto text-center text-red-600 text-lg font-bold py-8">Slots Full</div>
+        {!submitted && (
+          slotsAvailable ? (
+            <form className="w-full max-w-2xl mx-auto space-y-6" onSubmit={handleSubmit}>
+              <input type="hidden" name="eventId" value={eventId} />
+              <div className="flex flex-col gap-4">
+                <input type="text" name="name" placeholder="Your Name" value={formData.name} onChange={handleChange} required className="px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200" />
+                <input type="tel" name="phone" placeholder="Your Phone" value={formData.phone} onChange={handleChange} required className="px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200" />
+                <input type="email" name="email" placeholder="Your Email" value={formData.email} onChange={handleChange} required className="px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200" />
+              </div>
+              <button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-purple-700 text-white py-3 rounded-lg font-bold text-lg hover:scale-105 transition-transform duration-200 flex items-center justify-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                Register
+              </button>
+            </form>
+          ) : (
+            <div className="w-full max-w-2xl mx-auto text-center text-red-600 text-lg font-bold py-8">Slots Full</div>
+          )
         )}
         {submitted && (
           <div className="w-full max-w-2xl mx-auto bg-green-100 rounded-xl shadow p-8 text-center mt-8 animate-fade-in">
@@ -177,8 +185,17 @@ export default function RegisterPage() {
             <button className="mt-4 bg-gradient-to-r from-purple-500 to-purple-700 text-white px-6 py-3 rounded-lg font-bold hover:scale-105 transition-transform duration-200" onClick={() => navigate("/")}>Go to Home Page</button>
           </div>
         )}
-        <button className="mt-8 text-purple-600 hover:underline font-medium" onClick={() => navigate("/")}>← Back to Events</button>
       </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-8">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <div className="text-2xl font-bold mb-4">🧘‍♀️ YogicAmrita</div>
+          <p className="text-gray-400 mb-4">Certified Yoga Instructor • 200hr YTT Graduate from Bodhi School of Yoga</p>
+          <p className="text-gray-500 text-sm">© 2025 YogicAmrita. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 }

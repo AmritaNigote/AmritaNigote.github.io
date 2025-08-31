@@ -46,7 +46,7 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchEvents() {
       try {
-  const res = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vRvU60bZTBesKWLfuWl86PJRT9PhTwn7vjhoJbBEKhT1-k-Y9MynV1AOVme7xGr96HKxoGpIGqlQKMe/pub?gid=0&single=true&output=csv');
+        const res = await fetch(`https://docs.google.com/spreadsheets/d/e/2PACX-1vRvU60bZTBesKWLfuWl86PJRT9PhTwn7vjhoJbBEKhT1-k-Y9MynV1AOVme7xGr96HKxoGpIGqlQKMe/pub?gid=0&single=true&output=csv&nocache=${Date.now()}`, { cache: "no-store" });
         const text = await res.text();
         const lines = text.split('\n').filter(Boolean);
         if (lines.length < 2) return setLoadingEvents(false);
@@ -103,31 +103,31 @@ export default function HomePage() {
     fetchEvents();
   }, []);
 
-        const handleChange = (e) => {
-          setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-          });
-        };
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-        const handleSubmit = (e) => {
-          e.preventDefault();
-          // Submit to Google Forms
-          const formDataObj = new FormData();
-          formDataObj.append('entry.2005620554', formData.name);
-          formDataObj.append('entry.1045781291', formData.email);
-          formDataObj.append('entry.1166974658', formData.phone);
-          formDataObj.append('entry.839337160', formData.message);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Submit to Google Forms
+    const formDataObj = new FormData();
+    formDataObj.append('entry.2005620554', formData.name);
+    formDataObj.append('entry.1045781291', formData.email);
+    formDataObj.append('entry.1166974658', formData.phone);
+    formDataObj.append('entry.839337160', formData.message);
 
-          fetch('https://docs.google.com/forms/u/0/d/e/1FAIpQLScW-Ewst-5NPvWpji92xYNmWk8Gcl90w8mssypBZ-fus4yRvg/formResponse', {
-            method: 'POST',
-            mode: 'no-cors',
-            body: formDataObj,
-          }).then(() => {
-            setSubmitted(true);
-            setFormData({ name: '', email: '', phone: '', message: '' });
-          });
-        };
+    fetch('https://docs.google.com/forms/u/0/d/e/1FAIpQLScW-Ewst-5NPvWpji92xYNmWk8Gcl90w8mssypBZ-fus4yRvg/formResponse', {
+      method: 'POST',
+      mode: 'no-cors',
+      body: formDataObj,
+    }).then(() => {
+      setSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', message: '' });
+    });
+  };
 
   // Nav shadow on scroll
   React.useEffect(() => {
@@ -256,9 +256,9 @@ export default function HomePage() {
                     <div className="mb-3 text-gray-600 text-base font-normal italic">{ev['Description']}</div>
                     <div className="flex items-center gap-2 mb-2">
                       {ev['Type'] === 'Virtual' ? (
-                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M8 19h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M8 19h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                       ) : (
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10z" /><circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="2" fill="none"/></svg>
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10z" /><circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>
                       )}
                       {ev['Location Address'] && ev['Location Link'] ? (
                         <a href={ev['Location Link']} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-700 underline hover:text-blue-900 font-medium">{ev['Location Address']}</a>
