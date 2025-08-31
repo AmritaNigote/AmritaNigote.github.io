@@ -32,41 +32,102 @@ function MobileMenu({ open, setOpen }) {
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showMsg, setShowMsg] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: '',
+  });
+  const [submitted, setSubmitted] = useState(false);
+  // Upcoming Events state
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
 
-  // Smooth scroll for nav links
-        const [formData, setFormData] = useState({
-          name: '',
-          email: '',
-          phone: '',
-          message: '',
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch(`https://docs.google.com/spreadsheets/d/e/2PACX-1vRvU60bZTBesKWLfuWl86PJRT9PhTwn7vjhoJbBEKhT1-k-Y9MynV1AOVme7xGr96HKxoGpIGqlQKMe/pub?gid=0&single=true&output=csv&nocache=${Date.now()}`, { cache: "no-store" });
+        const text = await res.text();
+        const lines = text.split('\n').filter(Boolean);
+        if (lines.length < 2) return setLoadingEvents(false);
+        // Use first row for column names
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        const rows = lines.slice(1).map(line => {
+          // Split by comma, but handle quoted fields
+          const cols = [];
+          let current = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              cols.push(current);
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          cols.push(current);
+          // Map columns to headers
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = (cols[i] || '').replace(/"/g, '').trim());
+          return obj;
         });
-        const [submitted, setSubmitted] = useState(false);
+        // Filter future events using user's local time
+        const now = new Date();
+        // Show all future events, including cancelled
+        const futureEvents = rows.filter(ev => {
+          const dateStr = ev['Date'];
+          const timeStr = ev['Time'];
+          if (!dateStr) return false;
+          // Assume CSV date/time is in user's local time
+          let eventDate;
+          if (timeStr) {
+            eventDate = new Date(`${dateStr}T${timeStr}`);
+            if (isNaN(eventDate.getTime())) {
+              eventDate = new Date(`${dateStr} ${timeStr}`);
+            }
+          } else {
+            eventDate = new Date(dateStr);
+          }
+          if (isNaN(eventDate.getTime())) return false;
+          return eventDate > now;
+        });
+        setEvents(futureEvents);
+      } catch {
+        setEvents([]);
+      }
+      setLoadingEvents(false);
+    }
+    fetchEvents();
+  }, []);
 
-        const handleChange = (e) => {
-          setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-          });
-        };
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-        const handleSubmit = (e) => {
-          e.preventDefault();
-          // Submit to Google Forms
-          const formDataObj = new FormData();
-          formDataObj.append('entry.2005620554', formData.name);
-          formDataObj.append('entry.1045781291', formData.email);
-          formDataObj.append('entry.1166974658', formData.phone);
-          formDataObj.append('entry.839337160', formData.message);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Submit to Google Forms
+    const formDataObj = new FormData();
+    formDataObj.append('entry.2005620554', formData.name);
+    formDataObj.append('entry.1045781291', formData.email);
+    formDataObj.append('entry.1166974658', formData.phone);
+    formDataObj.append('entry.839337160', formData.message);
 
-          fetch('https://docs.google.com/forms/u/0/d/e/1FAIpQLScW-Ewst-5NPvWpji92xYNmWk8Gcl90w8mssypBZ-fus4yRvg/formResponse', {
-            method: 'POST',
-            mode: 'no-cors',
-            body: formDataObj,
-          }).then(() => {
-            setSubmitted(true);
-            setFormData({ name: '', email: '', phone: '', message: '' });
-          });
-        };
+    fetch('https://docs.google.com/forms/u/0/d/e/1FAIpQLScW-Ewst-5NPvWpji92xYNmWk8Gcl90w8mssypBZ-fus4yRvg/formResponse', {
+      method: 'POST',
+      mode: 'no-cors',
+      body: formDataObj,
+    }).then(() => {
+      setSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', message: '' });
+    });
+  };
 
   // Nav shadow on scroll
   React.useEffect(() => {
@@ -132,6 +193,114 @@ export default function HomePage() {
           >
             Begin Your Journey
           </button>
+        </div>
+      </section>
+
+      {/* Upcoming Events Section */}
+      <section id="events" className="py-20 bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-extrabold text-purple-800 mb-2 tracking-tight">Upcoming Events</h2>
+            <div className="w-20 h-1 bg-purple-400 mx-auto rounded-full"></div>
+          </div>
+          {loadingEvents ? (
+            <div className="text-center text-gray-500 animate-pulse">Loading events...</div>
+          ) : events.length === 0 ? (
+            <div className="text-center text-gray-500">No upcoming events.</div>
+          ) : (
+            <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+              {events.map((ev, idx) => {
+                // Color for status
+                let statusColor = "bg-green-100 text-green-700";
+                const status = (ev['Status'] || '').toLowerCase();
+                if (status === 'cancelled') statusColor = "bg-red-100 text-red-700";
+                else if (status === 'tentative') statusColor = "bg-yellow-100 text-yellow-700";
+                else if (status === 'open for registration') statusColor = "bg-blue-100 text-blue-700";
+                else if (status === 'filling fast') statusColor = "bg-yellow-100 text-yellow-700 border border-yellow-400";
+                else if (status === 'last few left') statusColor = "bg-orange-100 text-orange-700 border border-orange-400";
+                else if (status === 'full') statusColor = "bg-gray-200 text-gray-700 border border-gray-400";
+                // Type badge color
+                let typeColor = "bg-blue-100 text-blue-700";
+                if (ev['Type']?.toLowerCase() === 'virtual') typeColor = "bg-teal-100 text-teal-700";
+                else if (ev['Type']?.toLowerCase() === 'in person') typeColor = "bg-purple-100 text-purple-700";
+                return (
+                  <div key={idx} className="relative p-8 rounded-2xl shadow-2xl border border-gray-100 bg-gradient-to-br from-white to-purple-50 hover:scale-105 transition-transform duration-300 group flex flex-col justify-between min-h-[420px]">
+                    <div className="flex flex-wrap gap-2 mb-4 items-center">
+                      {ev['Type'] && <span className={`px-3 py-1 rounded-full text-xs font-bold ${typeColor}`}>{ev['Type']}</span>}
+                    </div>
+                    {/* Dominant Price Section */}
+                    {/* Price will be shown in Register button below */}
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="bg-purple-100 rounded-full p-2 shadow">
+                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      </div>
+                      <div>
+                        <div className="text-base font-semibold text-purple-700">
+                          {(() => {
+                            const dateStr = ev['Date'];
+                            if (!dateStr) return '';
+                            const d = new Date(dateStr);
+                            if (isNaN(d.getTime())) return dateStr;
+                            return d.toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            });
+                          })()}
+                        </div>
+                        {ev['Time'] && <div className="text-sm text-gray-500 font-semibold">{ev['Time']}</div>}
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 text-gray-900 group-hover:text-purple-700 transition-colors leading-tight">{ev['Event Title']}</h3>
+                    <div className="mb-3 text-gray-600 text-base font-normal italic">{ev['Description']}</div>
+                    <div className="flex items-center gap-2 mb-2">
+                      {ev['Type'] === 'Virtual' ? (
+                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M8 19h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10z" /><circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="2" fill="none" /></svg>
+                      )}
+                      {ev['Location Address'] && ev['Location Link'] ? (
+                        <a href={ev['Location Link']} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-700 underline hover:text-blue-900 font-medium">{ev['Location Address']}</a>
+                      ) : (
+                        <span className="text-sm text-gray-700 font-medium">{ev['Location Address'] || ev['Location']}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3" /></svg>
+                      <span className="text-sm text-gray-700 font-medium">Duration: {ev['Duration(min)']} min</span>
+                    </div>
+                    {ev['Slots'] && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        <span className="text-sm text-gray-800 font-medium">Available Slots: {parseInt(ev['Slots'] || '0', 10) - parseInt(ev['Registered'] || '0', 10)}</span>
+                      </div>
+                    )}
+                    {parseInt(ev['Slots'] || '0', 10) - parseInt(ev['Registered'] || '0', 10) > 0 ? (
+                      <a
+                        href={`/register/${ev['Event Id']}`}
+                        className="mt-6 w-full bg-purple-500 text-white py-2 rounded-lg font-semibold text-base shadow-sm hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>Register</span>
+                        {typeof ev['Price'] !== 'undefined' && (
+                          <span className="ml-2 text-white text-opacity-80 font-normal">
+                            • {parseFloat(ev['Price']) === 0 ? 'Free' : `₹${ev['Price']}`}
+                          </span>
+                        )}
+                      </a>
+                    ) : (
+                      <button
+                        className="mt-6 w-full bg-gray-300 text-gray-500 py-2 rounded-lg font-semibold text-base shadow-sm cursor-not-allowed flex items-center justify-center gap-2"
+                        disabled
+                      >
+                        Slots Full
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -308,6 +477,7 @@ export default function HomePage() {
                   className="w-full px-4 py-3 rounded-lg bg-white bg-opacity-20 border border-white border-opacity-30 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                 />
               </div>
+              <input type="hidden" name="eventId" value={formData.eventId || ''} />
               <textarea
                 name="message"
                 placeholder="Your Message"
