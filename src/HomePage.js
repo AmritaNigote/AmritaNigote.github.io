@@ -276,14 +276,26 @@ export default function HomePage() {
                         <span className="text-sm text-gray-800 font-medium">Available Slots: {parseInt(ev['Slots'] || '0', 10) - parseInt(ev['Registered'] || '0', 10)}</span>
                       </div>
                     )}
-                    <button className="mt-6 w-full bg-purple-500 text-white py-2 rounded-lg font-semibold text-base shadow-sm hover:bg-purple-600 transition-colors flex items-center justify-center gap-2">
-                      <span>Register</span>
-                      {typeof ev['Price'] !== 'undefined' && (
-                        <span className="ml-2 text-white text-opacity-80 font-normal">
-                          • {parseFloat(ev['Price']) === 0 ? 'Free' : `₹${ev['Price']}`}
-                        </span>
-                      )}
-                    </button>
+                    {parseInt(ev['Slots'] || '0', 10) - parseInt(ev['Registered'] || '0', 10) > 0 ? (
+                      <a
+                        href={`/register/${ev['Event Id']}`}
+                        className="mt-6 w-full bg-purple-500 text-white py-2 rounded-lg font-semibold text-base shadow-sm hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>Register</span>
+                        {typeof ev['Price'] !== 'undefined' && (
+                          <span className="ml-2 text-white text-opacity-80 font-normal">
+                            • {parseFloat(ev['Price']) === 0 ? 'Free' : `₹${ev['Price']}`}
+                          </span>
+                        )}
+                      </a>
+                    ) : (
+                      <button
+                        className="mt-6 w-full bg-gray-300 text-gray-500 py-2 rounded-lg font-semibold text-base shadow-sm cursor-not-allowed flex items-center justify-center gap-2"
+                        disabled
+                      >
+                        Slots Full
+                      </button>
+                    )}
                   </div>
                 );
               })}
